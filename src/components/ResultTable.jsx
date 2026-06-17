@@ -4,25 +4,30 @@ import { FiCheckCircle, FiXCircle, FiFileText } from "react-icons/fi";
 export default function ResultsTable({ rows, expectedCount }) {
   return (
     <div className="border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-5">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Scanned Codes</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            {expectedCount} scans complete hone ke baad popup aayega.
+          <h2 className="text-base font-bold text-slate-900 md:text-lg">Scanned Codes</h2>
+          <p className="mt-1 text-xs text-slate-500 md:text-sm">
+            {expectedCount} scans complete hote hi result auto finalize hoga.
           </p>
         </div>
-        <div className="flex gap-3 text-sm">
+
+        <div className="grid grid-cols-3 gap-2 text-xs md:flex md:text-sm">
           <div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-2">
             <FiFileText className="text-slate-500" />
-            <span className="font-medium text-slate-700">Total: {rows.length}</span>
+            <span className="font-medium text-slate-700">{rows.length}</span>
           </div>
           <div className="flex items-center gap-2 border border-emerald-200 bg-emerald-50 px-3 py-2">
             <FiCheckCircle className="text-emerald-600" />
-            <span className="font-medium text-emerald-700">OK: {rows.filter((r) => r.matched).length}</span>
+            <span className="font-medium text-emerald-700">
+              {rows.filter((r) => r.matched).length}
+            </span>
           </div>
           <div className="flex items-center gap-2 border border-red-200 bg-red-50 px-3 py-2">
             <FiXCircle className="text-red-600" />
-            <span className="font-medium text-red-700">Not OK: {rows.filter((r) => !r.matched).length}</span>
+            <span className="font-medium text-red-700">
+              {rows.filter((r) => !r.matched).length}
+            </span>
           </div>
         </div>
       </div>
@@ -31,12 +36,21 @@ export default function ResultsTable({ rows, expectedCount }) {
         <table className="min-w-full border-collapse text-left text-sm">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Code</th>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Type</th>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Time</th>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Status</th>
+              <th scope="col" className="px-4 py-4 font-semibold uppercase tracking-wide md:px-5">
+                Code
+              </th>
+              <th scope="col" className="px-4 py-4 font-semibold uppercase tracking-wide md:px-5">
+                Type
+              </th>
+              <th scope="col" className="px-4 py-4 font-semibold uppercase tracking-wide md:px-5">
+                Time
+              </th>
+              <th scope="col" className="px-4 py-4 font-semibold uppercase tracking-wide md:px-5">
+                Status
+              </th>
             </tr>
           </thead>
+
           <tbody>
             {rows.length === 0 ? (
               <tr>
@@ -55,10 +69,10 @@ export default function ResultsTable({ rows, expectedCount }) {
             ) : (
               rows.map((row, idx) => (
                 <tr key={`${row.value}-${idx}`} className="border-t border-slate-100 hover:bg-slate-50">
-                  <td className="px-5 py-4 font-medium text-slate-900">{row.value}</td>
-                  <td className="px-5 py-4 text-slate-600">{row.type}</td>
-                  <td className="px-5 py-4 text-slate-600">{row.time}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-4 font-medium text-slate-900 md:px-5">{row.value}</td>
+                  <td className="px-4 py-4 text-slate-600 md:px-5">{row.type}</td>
+                  <td className="px-4 py-4 text-slate-600 md:px-5">{row.time}</td>
+                  <td className="px-4 py-4 md:px-5">
                     <span
                       className={`inline-flex items-center gap-2 border px-3 py-1 text-xs font-semibold ${
                         row.matched

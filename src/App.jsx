@@ -6,40 +6,47 @@ export default function App() {
   const [expectedCount, setExpectedCount] = useState(4);
   const [countInput, setCountInput] = useState("4");
   const [scans, setScans] = useState([]);
-  const [sessionStatus, setSessionStatus] = useState("idle");
-  const [popup, setPopup] = useState({ open: false, title: "", message: "", type: "ok" });
   const [locked, setLocked] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState("idle");
+  const [toast, setToast] = useState({ open: false, type: "info", title: "", message: "" });
 
   const lastValueRef = useRef("");
   const cooldownRef = useRef(0);
+  const finalizingRef = useRef(false);
 
-  const openPopup = (title, message, type = "ok") => {
-    setPopup({ open: true, title, message, type });
+  const showToast = (type, title, message) => {
+    setToast({ open: true, type, title, message });
     setTimeout(() => {
-      setPopup({ open: false, title: "", message: "", type: "ok" });
-    }, 2500);
+      setToast({ open: false, type: "info", title: "", message: "" });
+    }, 1800);
   };
 
   const resetSession = () => {
     setScans([]);
     setLocked(false);
     setSessionStatus("idle");
+    finalizingRef.current = false;
     lastValueRef.current = "";
     cooldownRef.current = 0;
   };
 
-  const finalizeSession = (rows) => {
-    const mismatchRow = rows.find((r) => !r.matched);
+  const finalize = (rows) => {
+    if (finalizingRef.current) return;
+    finalizingRef.current = true;
 
-    if (mismatchRow) {
+    const mismatch = rows.find((r) => !r.matched);
+
+    if (mismatch) {
       setSessionStatus("not-ok");
-      openPopup("NOT OK", `${mismatchRow.value} match nahi hua`, "not-ok");
+      showToast("error", "NOT OK", `${mismatch.value} match nahi hua`);
     } else {
       setSessionStatus("ok");
-      openPopup("OK", `Sabhi ${expectedCount} codes match ho gaye`, "ok");
+      showToast("success", "OK", `Sabhi ${expectedCount} scans match ho gaye`);
     }
 
-    setTimeout(() => resetSession(), 1800);
+    setTimeout(() => {
+      resetSession();
+    }, 2200);
   };
 
   const addScan = (value, type = "Camera") => {
@@ -49,15 +56,14 @@ export default function App() {
     const now = Date.now();
     const normalized = cleaned.toUpperCase();
 
-    if (normalized === lastValueRef.current && now < cooldownRef.current) {
-      return;
-    }
+    if (normalized === lastValueRef.current && now < cooldownRef.current) return;
 
     lastValueRef.current = normalized;
-    cooldownRef.current = now + 1200;
+    cooldownRef.current = now + 1300;
 
     setScans((prev) => {
       const baseCode = prev[0]?.base || normalized;
+
       const row = {
         value: cleaned,
         type,
@@ -68,9 +74,13 @@ export default function App() {
 
       const next = [row, ...prev];
 
+      if (next.length === 1) {
+        showToast("info", "Captured", `Base code set: ${cleaned}`);
+      }
+
       if (next.length >= expectedCount) {
         setLocked(true);
-        setTimeout(() => finalizeSession(next), 300);
+        setTimeout(() => finalize(next), 200);
       }
 
       return next;
@@ -87,48 +97,57 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {popup.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      {toast.open && (
+        <div className="fixed left-3 right-3 top-3 z-50 mx-auto max-w-md">
           <div
-            className={`w-full max-w-sm border bg-white p-5 shadow-lg ${
-              popup.type === "ok" ? "border-emerald-200" : "border-red-200"
+            className={`border px-4 py-3 shadow-lg ${
+              toast.type === "success"
+                ? "border-emerald-200 bg-emerald-50"
+                : toast.type === "error"
+                ? "border-red-200 bg-red-50"
+                : "border-blue-200 bg-blue-50"
             }`}
           >
             <p
-              className={`text-xs font-semibold uppercase tracking-[0.3em] ${
-                popup.type === "ok" ? "text-emerald-700" : "text-red-700"
+              className={`text-[10px] font-semibold uppercase tracking-[0.3em] ${
+                toast.type === "success"
+                  ? "text-emerald-700"
+                  : toast.type === "error"
+                  ? "text-red-700"
+                  : "text-blue-700"
               }`}
             >
-              {popup.title}
+              {toast.title}
             </p>
-            <h3 className="mt-2 text-xl font-bold text-slate-900">
-              {popup.message}
-            </h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Session auto reset ho jayega.
-            </p>
+            <p className="mt-1 text-sm font-medium text-slate-900">{toast.message}</p>
           </div>
         </div>
       )}
 
-      <div className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-8">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-blue-700 md:text-xs">
               Dixon Company
             </p>
-            <h1 className="mt-1 text-xl font-bold md:text-3xl">
-              Quantity Based Scanner
+            <h1 className="mt-1 text-lg font-bold md:text-3xl">
+              Scanner Match Dashboard
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Base code first scan se set hoga. {expectedCount} scans complete hote hi result aayega.
+            <p className="mt-1 text-xs text-slate-500 md:text-sm">
+              Quantity daalo, scan auto add hoga, aur result automatically finalize hoga.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <input
               value={countInput}
-              onChange={(e) => setCountInput(e.target.value.replace(/[^0-9]/g, ""))}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^0-9]/g, "");
+                setCountInput(v);
+                const n = Number.parseInt(v || "0", 10);
+                if (Number.isFinite(n) && n > 0) setExpectedCount(n);
+              }}
+              inputMode="numeric"
               placeholder="Qty"
               className="w-20 rounded-none border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-600"
             />
@@ -140,7 +159,7 @@ export default function App() {
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
       <main className="mx-auto max-w-7xl px-4 py-5 md:px-8 md:py-6">
         <div className="grid gap-5 lg:grid-cols-3">
@@ -148,53 +167,57 @@ export default function App() {
             <ScannerPanel onScan={addScan} locked={locked} />
           </div>
 
-          <div className="border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-            <h2 className="text-base font-bold text-slate-900 md:text-lg">
-              Session Info
-            </h2>
+          <aside className="border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <h2 className="text-base font-bold text-slate-900 md:text-lg">Session Info</h2>
 
-            <div className="mt-4 space-y-3 text-sm">
+            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-1">
               <div className="border border-slate-200 bg-slate-50 p-4">
-                <p className="text-slate-500">Expected quantity</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {expectedCount}
-                </p>
+                <p className="text-xs text-slate-500">Expected</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{expectedCount}</p>
               </div>
 
               <div className="border border-slate-200 bg-slate-50 p-4">
-                <p className="text-slate-500">Scanned</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {stats.total}
-                </p>
+                <p className="text-xs text-slate-500">Scanned</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900">{stats.total}</p>
               </div>
 
               <div className="border border-slate-200 bg-slate-50 p-4">
-                <p className="text-slate-500">Base code</p>
-                <p className="mt-1 break-all font-semibold text-slate-900">
-                  {scans[0]?.base || "Not scanned yet"}
-                </p>
+                <p className="text-xs text-slate-500">OK</p>
+                <p className="mt-1 text-2xl font-bold text-emerald-700">{stats.matched}</p>
               </div>
 
               <div className="border border-slate-200 bg-slate-50 p-4">
-                <p className="text-slate-500">Status</p>
-                <p
-                  className={`mt-1 font-semibold ${
-                    sessionStatus === "ok"
-                      ? "text-emerald-700"
-                      : sessionStatus === "not-ok"
-                      ? "text-red-700"
-                      : "text-slate-900"
-                  }`}
-                >
-                  {sessionStatus === "ok"
-                    ? "OK"
-                    : sessionStatus === "not-ok"
-                    ? "NOT OK"
-                    : "Waiting"}
-                </p>
+                <p className="text-xs text-slate-500">Not OK</p>
+                <p className="mt-1 text-2xl font-bold text-red-700">{stats.mismatch}</p>
               </div>
             </div>
-          </div>
+
+            <div className="mt-4 border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs text-slate-500">Base code</p>
+              <p className="mt-1 break-all text-sm font-semibold text-slate-900">
+                {scans[0]?.base || "Not scanned yet"}
+              </p>
+            </div>
+
+            <div className="mt-4 border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs text-slate-500">Status</p>
+              <p
+                className={`mt-1 text-sm font-semibold ${
+                  sessionStatus === "ok"
+                    ? "text-emerald-700"
+                    : sessionStatus === "not-ok"
+                    ? "text-red-700"
+                    : "text-slate-700"
+                }`}
+              >
+                {sessionStatus === "ok"
+                  ? "OK"
+                  : sessionStatus === "not-ok"
+                  ? "NOT OK"
+                  : "Waiting"}
+              </p>
+            </div>
+          </aside>
         </div>
 
         <div className="mt-5">

@@ -4,14 +4,21 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 export default function ScannerPanel({ onScan, locked }) {
   const videoRef = useRef(null);
   const readerRef = useRef(null);
-  const [running, setRunning] = useState(false);
   const lastScanRef = useRef({ value: "", time: 0 });
+  const [running, setRunning] = useState(false);
 
   useEffect(() => {
     return () => {
       readerRef.current?.reset();
     };
   }, []);
+
+  useEffect(() => {
+    if (locked) {
+      readerRef.current?.reset();
+      setRunning(false);
+    }
+  }, [locked]);
 
   const startScanner = async () => {
     if (!videoRef.current || locked) return;
@@ -26,10 +33,7 @@ export default function ScannerPanel({ onScan, locked }) {
         if (!raw) return;
 
         const now = Date.now();
-        if (
-          raw === lastScanRef.current.value &&
-          now - lastScanRef.current.time < 1500
-        ) {
+        if (raw === lastScanRef.current.value && now - lastScanRef.current.time < 1500) {
           return;
         }
 
@@ -46,17 +50,13 @@ export default function ScannerPanel({ onScan, locked }) {
     setRunning(false);
   };
 
-  useEffect(() => {
-    if (locked) stopScanner();
-  }, [locked]);
-
   return (
     <div className="border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-5">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Live Scanner</h2>
-          <p className="text-sm text-slate-500">
-            Scan hote hi entry automatic add hogi.
+          <h2 className="text-base font-bold text-slate-900 md:text-lg">Live Scanner</h2>
+          <p className="text-xs text-slate-500 md:text-sm">
+            Camera se scan hote hi entry add ho jayegi.
           </p>
         </div>
 
@@ -64,7 +64,7 @@ export default function ScannerPanel({ onScan, locked }) {
           <button
             onClick={startScanner}
             disabled={locked}
-            className="rounded-none bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="rounded-none bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Start Camera
           </button>
@@ -80,20 +80,26 @@ export default function ScannerPanel({ onScan, locked }) {
 
       <div className="grid gap-0 xl:grid-cols-2">
         <div className="border-b border-slate-200 xl:border-b-0 xl:border-r">
-          <video ref={videoRef} className="h-72 w-full bg-black object-cover md:h-96" />
+          <video ref={videoRef} className="h-64 w-full bg-black object-cover sm:h-72 md:h-96" />
         </div>
 
-        <div className="p-5">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Auto scan mode
-          </h3>
-
-          <div className="mt-4 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            Same code baar-baar turant register nahi hoga. Dusre QR/barcode par move karke next scan hoga.
+        <div className="p-4 md:p-5">
+          <div className="border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Auto Scan Mode
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              Base code first scan se set hoga. Same code ka repeat turant ignore hoga.
+            </p>
           </div>
 
-          <div className="mt-4 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            Manual entry ab optional hai. Camera scan se direct entry add hoti hai.
+          <div className="mt-3 border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Mobile Friendly
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              Small screen par bhi sab important parts visible rahenge.
+            </p>
           </div>
         </div>
       </div>
