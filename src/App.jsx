@@ -5,6 +5,7 @@ import ResultsTable from "./components/ResultTable";
 export default function App() {
   const [expectedCount, setExpectedCount] = useState(4);
   const [countInput, setCountInput] = useState("4");
+  const [remaining, setRemaining] = useState(4);
   const [scans, setScans] = useState([]);
   const [locked, setLocked] = useState(false);
   const [sessionStatus, setSessionStatus] = useState("idle");
@@ -13,6 +14,10 @@ export default function App() {
   const lastValueRef = useRef("");
   const cooldownRef = useRef(0);
   const finalizingRef = useRef(false);
+
+  useEffect(() => {
+    setRemaining(expectedCount);
+  }, [expectedCount]);
 
   const showToast = (type, title, message, duration = 1500) => {
     setToast({ open: true, type, title, message });
@@ -26,6 +31,7 @@ export default function App() {
     setScans([]);
     setLocked(false);
     setSessionStatus("idle");
+    setRemaining(expectedCount);
     finalizingRef.current = false;
     lastValueRef.current = "";
     cooldownRef.current = 0;
@@ -46,9 +52,7 @@ export default function App() {
       showToast("success", "OK MATCHED", `Sabhi ${expectedCount} codes match ho gaye`, 2200);
     }
 
-    setTimeout(() => {
-      resetSession();
-    }, 2400);
+    setTimeout(() => resetSession(), 2400);
   };
 
   const addScan = (value, type = "Camera") => {
@@ -75,6 +79,8 @@ export default function App() {
       };
 
       const next = [row, ...prev];
+      const nextRemaining = Math.max(expectedCount - next.length, 0);
+      setRemaining(nextRemaining);
 
       if (next.length === 1) {
         showToast("info", "1 CAPTURED", `Base code set: ${cleaned}`);
@@ -137,7 +143,7 @@ export default function App() {
               Scanner Match Dashboard
             </h1>
             <p className="mt-1 text-xs text-slate-500 md:text-sm">
-              Quantity daalo, scan auto add hoga, aur result automatically finalize hoga.
+              Quantity daalo, scan auto add hoga, aur remaining count kam hota jayega.
             </p>
           </div>
 
@@ -180,8 +186,8 @@ export default function App() {
               </div>
 
               <div className="border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs text-slate-500">Scanned</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">{stats.total}</p>
+                <p className="text-xs text-slate-500">Remaining</p>
+                <p className="mt-1 text-2xl font-bold text-blue-700">{remaining}</p>
               </div>
 
               <div className="border border-slate-200 bg-slate-50 p-4">
