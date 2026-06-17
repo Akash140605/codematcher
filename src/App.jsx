@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ScannerPanel from "./components/ScannerPanel";
 import ResultsTable from "./components/ResultTable";
 
@@ -14,11 +14,12 @@ export default function App() {
   const cooldownRef = useRef(0);
   const finalizingRef = useRef(false);
 
-  const showToast = (type, title, message) => {
+  const showToast = (type, title, message, duration = 1500) => {
     setToast({ open: true, type, title, message });
-    setTimeout(() => {
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => {
       setToast({ open: false, type: "info", title: "", message: "" });
-    }, 1800);
+    }, duration);
   };
 
   const resetSession = () => {
@@ -33,20 +34,21 @@ export default function App() {
   const finalize = (rows) => {
     if (finalizingRef.current) return;
     finalizingRef.current = true;
+    setLocked(true);
 
     const mismatch = rows.find((r) => !r.matched);
 
     if (mismatch) {
       setSessionStatus("not-ok");
-      showToast("error", "NOT OK", `${mismatch.value} match nahi hua`);
+      showToast("error", "NOT OK", `${mismatch.value} match nahi hua`, 2200);
     } else {
       setSessionStatus("ok");
-      showToast("success", "OK", `Sabhi ${expectedCount} scans match ho gaye`);
+      showToast("success", "OK MATCHED", `Sabhi ${expectedCount} codes match ho gaye`, 2200);
     }
 
     setTimeout(() => {
       resetSession();
-    }, 2200);
+    }, 2400);
   };
 
   const addScan = (value, type = "Camera") => {
@@ -75,12 +77,13 @@ export default function App() {
       const next = [row, ...prev];
 
       if (next.length === 1) {
-        showToast("info", "Captured", `Base code set: ${cleaned}`);
+        showToast("info", "1 CAPTURED", `Base code set: ${cleaned}`);
+      } else if (next.length < expectedCount) {
+        showToast("info", `${next.length} CAPTURED`, `${cleaned} added`);
       }
 
       if (next.length >= expectedCount) {
-        setLocked(true);
-        setTimeout(() => finalize(next), 200);
+        setTimeout(() => finalize(next), 150);
       }
 
       return next;

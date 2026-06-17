@@ -56,7 +56,7 @@ export default function ScannerPanel({ onScan, locked }) {
         <div>
           <h2 className="text-base font-bold text-slate-900 md:text-lg">Live Scanner</h2>
           <p className="text-xs text-slate-500 md:text-sm">
-            Camera se scan hote hi entry add ho jayegi.
+            Scan hote hi entry add ho jayegi.
           </p>
         </div>
 
