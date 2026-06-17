@@ -9,19 +9,14 @@ export default function App() {
   const [scans, setScans] = useState([]);
   const [locked, setLocked] = useState(false);
   const [sessionStatus, setSessionStatus] = useState("idle");
-  const [toast, setToast] = useState({
-    open: false,
-    type: "info",
-    title: "",
-    message: "",
-  });
+  const [message, setMessage] = useState("");
 
   const lastValueRef = useRef("");
   const cooldownRef = useRef(0);
-  const finalizingRef = useRef(false);
-  const toastTimerRef = useRef(null);
-  const resetTimerRef = useRef(null);
   const finalizeTimerRef = useRef(null);
+  const resetTimerRef = useRef(null);
+  const clearMsgTimerRef = useRef(null);
+  const finalizingRef = useRef(false);
 
   useEffect(() => {
     setRemaining(expectedCount);
@@ -29,29 +24,28 @@ export default function App() {
 
   useEffect(() => {
     return () => {
-      clearTimeout(toastTimerRef.current);
-      clearTimeout(resetTimerRef.current);
       clearTimeout(finalizeTimerRef.current);
+      clearTimeout(resetTimerRef.current);
+      clearTimeout(clearMsgTimerRef.current);
     };
   }, []);
 
-  const showToast = (type, title, message, duration = 1500) => {
-    clearTimeout(toastTimerRef.current);
-    setToast({ open: true, type, title, message });
-    toastTimerRef.current = setTimeout(() => {
-      setToast({ open: false, type: "info", title: "", message: "" });
-    }, duration);
+  const showMessage = (text, ms = 1800) => {
+    setMessage(text);
+    clearTimeout(clearMsgTimerRef.current);
+    clearMsgTimerRef.current = setTimeout(() => setMessage(""), ms);
   };
 
   const resetSession = () => {
-    clearTimeout(toastTimerRef.current);
-    clearTimeout(resetTimerRef.current);
     clearTimeout(finalizeTimerRef.current);
+    clearTimeout(resetTimerRef.current);
+    clearTimeout(clearMsgTimerRef.current);
 
     setScans([]);
     setLocked(false);
     setSessionStatus("idle");
     setRemaining(expectedCount);
+    setMessage("");
     finalizingRef.current = false;
     lastValueRef.current = "";
     cooldownRef.current = 0;
@@ -66,15 +60,15 @@ export default function App() {
 
     if (mismatch) {
       setSessionStatus("not-ok");
-      showToast("error", "NOT OK", `${mismatch.value} match nahi hua`, 2200);
+      showMessage(`NOT OK: ${mismatch.value} match nahi hua`);
     } else {
       setSessionStatus("ok");
-      showToast("success", "OK MATCHED", `Sabhi ${expectedCount} codes match ho gaye`, 2200);
+      showMessage("OK MATCHED: sabhi codes match ho gaye");
     }
 
     resetTimerRef.current = setTimeout(() => {
       resetSession();
-    }, 2400);
+    }, 2200);
   };
 
   const addScan = (value, type = "Camera") => {
@@ -104,14 +98,14 @@ export default function App() {
       setRemaining(Math.max(expectedCount - next.length, 0));
 
       if (next.length === 1) {
-        showToast("info", "1 CAPTURED", `Base code set: ${cleaned}`);
+        showMessage(`1 captured: ${cleaned}`);
       } else if (next.length < expectedCount) {
-        showToast("info", `${next.length} CAPTURED`, `${cleaned} added`);
+        showMessage(`${next.length} captured`);
       }
 
       if (next.length >= expectedCount) {
         clearTimeout(finalizeTimerRef.current);
-        finalizeTimerRef.current = setTimeout(() => finalize(next), 150);
+        finalizeTimerRef.current = setTimeout(() => finalize(next), 120);
       }
 
       return next;
@@ -128,29 +122,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {toast.open && (
-        <div className="fixed left-3 right-3 top-3 z-50 mx-auto max-w-md">
-          <div
-            className={`border px-4 py-3 shadow-lg ${
-              toast.type === "success"
-                ? "border-emerald-200 bg-emerald-50"
-                : toast.type === "error"
-                ? "border-red-200 bg-red-50"
-                : "border-blue-200 bg-blue-50"
-            }`}
-          >
-            <p
-              className={`text-[10px] font-semibold uppercase tracking-[0.3em] ${
-                toast.type === "success"
-                  ? "text-emerald-700"
-                  : toast.type === "error"
-                  ? "text-red-700"
-                  : "text-blue-700"
-              }`}
-            >
-              {toast.title}
-            </p>
-            <p className="mt-1 text-sm font-medium text-slate-900">{toast.message}</p>
+      {message && (
+        <div className="fixed left-0 right-0 top-0 z-50">
+          <div className="mx-auto max-w-7xl px-3 pt-3">
+            <div className="rounded-none border border-slate-200 bg-white px-4 py-3 text-sm font-medium shadow-sm">
+              {message}
+            </div>
           </div>
         </div>
       )}
@@ -165,7 +142,7 @@ export default function App() {
               Scanner Match Dashboard
             </h1>
             <p className="mt-1 text-xs text-slate-500 md:text-sm">
-              Quantity daalo, scan auto add hoga, aur remaining count kam hota jayega.
+              Quantity daalo aur scan auto-add hota rahega.
             </p>
           </div>
 
@@ -176,8 +153,10 @@ export default function App() {
                 const v = e.target.value.replace(/[^0-9]/g, "");
                 setCountInput(v);
                 const n = Number.parseInt(v || "0", 10);
-                if (Number.isFinite(n) && n > 0) setExpectedCount(n);
-                if (Number.isFinite(n) && n > 0) setRemaining(n);
+                if (Number.isFinite(n) && n > 0) {
+                  setExpectedCount(n);
+                  setRemaining(n);
+                }
               }}
               inputMode="numeric"
               placeholder="Qty"

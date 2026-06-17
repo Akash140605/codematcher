@@ -64,7 +64,7 @@ export default function ScannerPanel({ onScan, locked }) {
           <button
             onClick={startScanner}
             disabled={locked}
-            className="rounded-none bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-none bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             Start Camera
           </button>
@@ -78,29 +78,10 @@ export default function ScannerPanel({ onScan, locked }) {
         )}
       </div>
 
-      <div className="grid gap-0 xl:grid-cols-2">
-        <div className="border-b border-slate-200 xl:border-b-0 xl:border-r">
-          <video ref={videoRef} className="h-64 w-full bg-black object-cover sm:h-72 md:h-96" />
-        </div>
-
-        <div className="p-4 md:p-5">
-          <div className="border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Auto Scan Mode
-            </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Base code first scan se set hoga. Same code ka repeat turant ignore hoga.
-            </p>
-          </div>
-
-          <div className="mt-3 border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Mobile Friendly
-            </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Small screen par bhi sab important parts visible rahenge.
-            </p>
-          </div>
+      <div className="p-4 md:p-5">
+        <video ref={videoRef} className="h-64 w-full bg-black object-cover sm:h-72 md:h-96" />
+        <div className="mt-3 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          Camera open karo, code scan karo, aur entry automatically add ho jayegi.
         </div>
       </div>
     </div>
