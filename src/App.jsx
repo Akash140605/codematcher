@@ -9,25 +9,45 @@ export default function App() {
   const [scans, setScans] = useState([]);
   const [locked, setLocked] = useState(false);
   const [sessionStatus, setSessionStatus] = useState("idle");
-  const [toast, setToast] = useState({ open: false, type: "info", title: "", message: "" });
+  const [toast, setToast] = useState({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
 
   const lastValueRef = useRef("");
   const cooldownRef = useRef(0);
   const finalizingRef = useRef(false);
+  const toastTimerRef = useRef(null);
+  const resetTimerRef = useRef(null);
+  const finalizeTimerRef = useRef(null);
 
   useEffect(() => {
     setRemaining(expectedCount);
   }, [expectedCount]);
 
+  useEffect(() => {
+    return () => {
+      clearTimeout(toastTimerRef.current);
+      clearTimeout(resetTimerRef.current);
+      clearTimeout(finalizeTimerRef.current);
+    };
+  }, []);
+
   const showToast = (type, title, message, duration = 1500) => {
+    clearTimeout(toastTimerRef.current);
     setToast({ open: true, type, title, message });
-    window.clearTimeout(showToast._t);
-    showToast._t = window.setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast({ open: false, type: "info", title: "", message: "" });
     }, duration);
   };
 
   const resetSession = () => {
+    clearTimeout(toastTimerRef.current);
+    clearTimeout(resetTimerRef.current);
+    clearTimeout(finalizeTimerRef.current);
+
     setScans([]);
     setLocked(false);
     setSessionStatus("idle");
@@ -52,12 +72,14 @@ export default function App() {
       showToast("success", "OK MATCHED", `Sabhi ${expectedCount} codes match ho gaye`, 2200);
     }
 
-    setTimeout(() => resetSession(), 2400);
+    resetTimerRef.current = setTimeout(() => {
+      resetSession();
+    }, 2400);
   };
 
   const addScan = (value, type = "Camera") => {
     const cleaned = value.trim();
-    if (!cleaned || locked) return;
+    if (!cleaned || locked || finalizingRef.current) return;
 
     const now = Date.now();
     const normalized = cleaned.toUpperCase();
@@ -79,8 +101,7 @@ export default function App() {
       };
 
       const next = [row, ...prev];
-      const nextRemaining = Math.max(expectedCount - next.length, 0);
-      setRemaining(nextRemaining);
+      setRemaining(Math.max(expectedCount - next.length, 0));
 
       if (next.length === 1) {
         showToast("info", "1 CAPTURED", `Base code set: ${cleaned}`);
@@ -89,7 +110,8 @@ export default function App() {
       }
 
       if (next.length >= expectedCount) {
-        setTimeout(() => finalize(next), 150);
+        clearTimeout(finalizeTimerRef.current);
+        finalizeTimerRef.current = setTimeout(() => finalize(next), 150);
       }
 
       return next;
@@ -155,6 +177,7 @@ export default function App() {
                 setCountInput(v);
                 const n = Number.parseInt(v || "0", 10);
                 if (Number.isFinite(n) && n > 0) setExpectedCount(n);
+                if (Number.isFinite(n) && n > 0) setRemaining(n);
               }}
               inputMode="numeric"
               placeholder="Qty"
