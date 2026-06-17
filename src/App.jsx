@@ -56,9 +56,7 @@ export default function App() {
             <h1 className="mt-1 text-xl font-bold md:text-3xl">
               QR / Barcode Compare Dashboard
             </h1>
-            <p className="mt-1 text-sm text-slate-500 md:max-w-2xl">
-              First scanned code ko base maan kar baaki codes compare hote rahenge.
-            </p>
+           
           </div>
 
           <div className="flex">
