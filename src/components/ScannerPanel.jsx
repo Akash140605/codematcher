@@ -1,29 +1,40 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 
-export default function ScannerPanel({ onScan }) {
+export default function ScannerPanel({ onScan, locked }) {
   const videoRef = useRef(null);
   const readerRef = useRef(null);
   const [running, setRunning] = useState(false);
-  const [manualCode, setManualCode] = useState("");
+  const lastScanRef = useRef({ value: "", time: 0 });
 
   useEffect(() => {
     return () => {
-      if (readerRef.current) readerRef.current.reset();
+      readerRef.current?.reset();
     };
   }, []);
 
   const startScanner = async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || locked) return;
+
     const reader = new BrowserMultiFormatReader();
     readerRef.current = reader;
     setRunning(true);
 
     try {
       await reader.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
-        if (result?.getText()) {
-          onScan(result.getText(), "Camera");
+        const raw = result?.getText?.()?.trim();
+        if (!raw) return;
+
+        const now = Date.now();
+        if (
+          raw === lastScanRef.current.value &&
+          now - lastScanRef.current.time < 1500
+        ) {
+          return;
         }
+
+        lastScanRef.current = { value: raw, time: now };
+        onScan(raw, "Camera");
       });
     } catch {
       setRunning(false);
@@ -31,15 +42,13 @@ export default function ScannerPanel({ onScan }) {
   };
 
   const stopScanner = () => {
-    if (readerRef.current) readerRef.current.reset();
+    readerRef.current?.reset();
     setRunning(false);
   };
 
-  const addManual = () => {
-    if (!manualCode.trim()) return;
-    onScan(manualCode.trim(), "Manual");
-    setManualCode("");
-  };
+  useEffect(() => {
+    if (locked) stopScanner();
+  }, [locked]);
 
   return (
     <div className="border border-slate-200 bg-white shadow-sm">
@@ -47,21 +56,22 @@ export default function ScannerPanel({ onScan }) {
         <div>
           <h2 className="text-lg font-bold text-slate-900">Live Scanner</h2>
           <p className="text-sm text-slate-500">
-            Camera se scan karo ya manually code enter karo.
+            Scan hote hi entry automatic add hogi.
           </p>
         </div>
 
         {!running ? (
           <button
             onClick={startScanner}
-            className="rounded-none bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+            disabled={locked}
+            className="rounded-none bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             Start Camera
           </button>
         ) : (
           <button
             onClick={stopScanner}
-            className="rounded-none bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="rounded-none bg-red-600 px-4 py-2 text-sm font-semibold text-white"
           >
             Stop Camera
           </button>
@@ -75,25 +85,15 @@ export default function ScannerPanel({ onScan }) {
 
         <div className="p-5">
           <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Manual Entry
+            Auto scan mode
           </h3>
 
-          <input
-            value={manualCode}
-            onChange={(e) => setManualCode(e.target.value)}
-            placeholder="Enter scanned code"
-            className="mt-3 w-full rounded-none border border-slate-300 px-4 py-3 text-sm outline-none focus:border-blue-600"
-          />
-
-          <button
-            onClick={addManual}
-            className="mt-3 w-full rounded-none bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-          >
-            Add Scan
-          </button>
+          <div className="mt-4 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Same code baar-baar turant register nahi hoga. Dusre QR/barcode par move karke next scan hoga.
+          </div>
 
           <div className="mt-4 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            First scanned code automatically becomes the base. Baaki sab uske against compare honge.
+            Manual entry ab optional hai. Camera scan se direct entry add hoti hai.
           </div>
         </div>
       </div>

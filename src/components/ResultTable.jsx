@@ -1,33 +1,28 @@
 import React from "react";
 import { FiCheckCircle, FiXCircle, FiFileText } from "react-icons/fi";
 
-export default function ResultsTable({ rows }) {
-  const total = rows.length;
-  const matched = rows.filter((row) => row.matched).length;
-  const mismatch = rows.filter((row) => !row.matched).length;
-
+export default function ResultsTable({ rows, expectedCount }) {
   return (
     <div className="border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Scanned Codes</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Live scan results with match status.
+            {expectedCount} scans complete hone ke baad popup aayega.
           </p>
         </div>
-
         <div className="flex gap-3 text-sm">
           <div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-2">
             <FiFileText className="text-slate-500" />
-            <span className="font-medium text-slate-700">Total: {total}</span>
+            <span className="font-medium text-slate-700">Total: {rows.length}</span>
           </div>
           <div className="flex items-center gap-2 border border-emerald-200 bg-emerald-50 px-3 py-2">
             <FiCheckCircle className="text-emerald-600" />
-            <span className="font-medium text-emerald-700">OK: {matched}</span>
+            <span className="font-medium text-emerald-700">OK: {rows.filter((r) => r.matched).length}</span>
           </div>
           <div className="flex items-center gap-2 border border-red-200 bg-red-50 px-3 py-2">
             <FiXCircle className="text-red-600" />
-            <span className="font-medium text-red-700">Mismatch: {mismatch}</span>
+            <span className="font-medium text-red-700">Not OK: {rows.filter((r) => !r.matched).length}</span>
           </div>
         </div>
       </div>
@@ -36,21 +31,12 @@ export default function ResultsTable({ rows }) {
         <table className="min-w-full border-collapse text-left text-sm">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">
-                Code
-              </th>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">
-                Type
-              </th>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">
-                Time
-              </th>
-              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">
-                Status
-              </th>
+              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Code</th>
+              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Type</th>
+              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Time</th>
+              <th scope="col" className="px-5 py-4 font-semibold uppercase tracking-wide">Status</th>
             </tr>
           </thead>
-
           <tbody>
             {rows.length === 0 ? (
               <tr>
@@ -61,17 +47,14 @@ export default function ResultsTable({ rows }) {
                     </div>
                     <p className="font-medium text-slate-700">No scans yet</p>
                     <p className="text-sm text-slate-500">
-                      Scanner start karo ya manually code add karo.
+                      Scanner start karo aur codes scan karo.
                     </p>
                   </div>
                 </td>
               </tr>
             ) : (
               rows.map((row, idx) => (
-                <tr
-                  key={`${row.value}-${idx}`}
-                  className="border-t border-slate-100 hover:bg-slate-50"
-                >
+                <tr key={`${row.value}-${idx}`} className="border-t border-slate-100 hover:bg-slate-50">
                   <td className="px-5 py-4 font-medium text-slate-900">{row.value}</td>
                   <td className="px-5 py-4 text-slate-600">{row.type}</td>
                   <td className="px-5 py-4 text-slate-600">{row.time}</td>
@@ -84,7 +67,7 @@ export default function ResultsTable({ rows }) {
                       }`}
                     >
                       {row.matched ? <FiCheckCircle /> : <FiXCircle />}
-                      {row.matched ? "OK" : "Mismatch"}
+                      {row.matched ? "OK" : "Not OK"}
                     </span>
                   </td>
                 </tr>
