@@ -8,7 +8,7 @@ export default function ResultsTable({ rows, expectedCount }) {
         <div>
           <h2 className="text-base font-bold text-slate-900 md:text-lg">Scanned Codes</h2>
           <p className="mt-1 text-xs text-slate-500 md:text-sm">
-            {expectedCount} scans complete hote hi result auto finalize hoga.
+            {expectedCount} scans complete 
           </p>
         </div>
 
