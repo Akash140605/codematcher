@@ -4,50 +4,60 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 export default function ScannerPanel({ onScan, locked }) {
   const videoRef = useRef(null);
   const readerRef = useRef(null);
+  const controlsRef = useRef(null);
   const lastScanRef = useRef({ value: "", time: 0 });
   const [running, setRunning] = useState(false);
 
   useEffect(() => {
     return () => {
-      readerRef.current?.reset();
+      controlsRef.current?.stop?.();
+      readerRef.current?.reset?.();
     };
   }, []);
 
   useEffect(() => {
     if (locked) {
-      readerRef.current?.reset();
+      controlsRef.current?.stop?.();
+      readerRef.current?.reset?.();
       setRunning(false);
     }
   }, [locked]);
 
+  const stopScanner = () => {
+    controlsRef.current?.stop?.();
+    readerRef.current?.reset?.();
+    setRunning(false);
+  };
+
   const startScanner = async () => {
     if (!videoRef.current || locked) return;
 
-    const reader = new BrowserMultiFormatReader();
-    readerRef.current = reader;
-    setRunning(true);
-
     try {
-      await reader.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
-        const raw = result?.getText?.()?.trim();
-        if (!raw) return;
+      const reader = new BrowserMultiFormatReader();
+      readerRef.current = reader;
+      setRunning(true);
 
-        const now = Date.now();
-        if (raw === lastScanRef.current.value && now - lastScanRef.current.time < 1500) {
-          return;
+      const controls = await reader.decodeFromVideoDevice(
+        undefined,
+        videoRef.current,
+        (result) => {
+          const raw = result?.getText?.()?.trim();
+          if (!raw) return;
+
+          const now = Date.now();
+          if (raw === lastScanRef.current.value && now - lastScanRef.current.time < 1200) {
+            return;
+          }
+
+          lastScanRef.current = { value: raw, time: now };
+          onScan(raw, "Camera", stopScanner);
         }
+      );
 
-        lastScanRef.current = { value: raw, time: now };
-        onScan(raw, "Camera");
-      });
+      controlsRef.current = controls;
     } catch {
       setRunning(false);
     }
-  };
-
-  const stopScanner = () => {
-    readerRef.current?.reset();
-    setRunning(false);
   };
 
   return (
@@ -79,9 +89,14 @@ export default function ScannerPanel({ onScan, locked }) {
       </div>
 
       <div className="p-4 md:p-5">
-        <video ref={videoRef} className="h-64 w-full bg-black object-cover sm:h-72 md:h-96" />
+        <video
+          ref={videoRef}
+          className="h-64 w-full bg-black object-cover sm:h-72 md:h-96"
+          playsInline
+          muted
+        />
         <div className="mt-3 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          Camera open karo, code scan karo, aur entry automatically add ho jayegi.
+          Camera open karke code scan karo. Same code repeat short time me ignore hoga.
         </div>
       </div>
     </div>

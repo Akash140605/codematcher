@@ -20,7 +20,6 @@ export default function ResultsTable({ rows, expectedCount }) {
               <th className="px-4 py-4 font-semibold uppercase tracking-wide md:px-5">Status</th>
             </tr>
           </thead>
-
           <tbody>
             {rows.length === 0 ? (
               <tr>

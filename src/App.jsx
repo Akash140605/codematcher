@@ -9,14 +9,14 @@ export default function App() {
   const [scans, setScans] = useState([]);
   const [locked, setLocked] = useState(false);
   const [sessionStatus, setSessionStatus] = useState("idle");
-  const [message, setMessage] = useState("");
+  const [banner, setBanner] = useState("");
 
   const lastValueRef = useRef("");
   const cooldownRef = useRef(0);
   const finalizeTimerRef = useRef(null);
   const resetTimerRef = useRef(null);
-  const clearMsgTimerRef = useRef(null);
-  const finalizingRef = useRef(false);
+  const bannerTimerRef = useRef(null);
+  const finalizeLockRef = useRef(false);
 
   useEffect(() => {
     setRemaining(expectedCount);
@@ -26,44 +26,46 @@ export default function App() {
     return () => {
       clearTimeout(finalizeTimerRef.current);
       clearTimeout(resetTimerRef.current);
-      clearTimeout(clearMsgTimerRef.current);
+      clearTimeout(bannerTimerRef.current);
     };
   }, []);
 
-  const showMessage = (text, ms = 1800) => {
-    setMessage(text);
-    clearTimeout(clearMsgTimerRef.current);
-    clearMsgTimerRef.current = setTimeout(() => setMessage(""), ms);
+  const showBanner = (text, ms = 1700) => {
+    setBanner(text);
+    clearTimeout(bannerTimerRef.current);
+    bannerTimerRef.current = setTimeout(() => setBanner(""), ms);
   };
 
   const resetSession = () => {
     clearTimeout(finalizeTimerRef.current);
     clearTimeout(resetTimerRef.current);
-    clearTimeout(clearMsgTimerRef.current);
+    clearTimeout(bannerTimerRef.current);
 
     setScans([]);
     setLocked(false);
     setSessionStatus("idle");
     setRemaining(expectedCount);
-    setMessage("");
-    finalizingRef.current = false;
+    setBanner("");
+    finalizeLockRef.current = false;
     lastValueRef.current = "";
     cooldownRef.current = 0;
   };
 
-  const finalize = (rows) => {
-    if (finalizingRef.current) return;
-    finalizingRef.current = true;
+  const finalize = (rows, stopScanner) => {
+    if (finalizeLockRef.current) return;
+    finalizeLockRef.current = true;
     setLocked(true);
+
+    if (stopScanner) stopScanner();
 
     const mismatch = rows.find((r) => !r.matched);
 
     if (mismatch) {
       setSessionStatus("not-ok");
-      showMessage(`NOT OK: ${mismatch.value} match nahi hua`);
+      showBanner(`NOT OK: ${mismatch.value} match nahi hua`);
     } else {
       setSessionStatus("ok");
-      showMessage("OK MATCHED: sabhi codes match ho gaye");
+      showBanner("OK MATCHED: sabhi codes match ho gaye");
     }
 
     resetTimerRef.current = setTimeout(() => {
@@ -71,9 +73,9 @@ export default function App() {
     }, 2200);
   };
 
-  const addScan = (value, type = "Camera") => {
+  const addScan = (value, type = "Camera", stopScanner) => {
     const cleaned = value.trim();
-    if (!cleaned || locked || finalizingRef.current) return;
+    if (!cleaned || locked || finalizeLockRef.current) return;
 
     const now = Date.now();
     const normalized = cleaned.toUpperCase();
@@ -81,7 +83,7 @@ export default function App() {
     if (normalized === lastValueRef.current && now < cooldownRef.current) return;
 
     lastValueRef.current = normalized;
-    cooldownRef.current = now + 1300;
+    cooldownRef.current = now + 1200;
 
     setScans((prev) => {
       const baseCode = prev[0]?.base || normalized;
@@ -95,17 +97,18 @@ export default function App() {
       };
 
       const next = [row, ...prev];
-      setRemaining(Math.max(expectedCount - next.length, 0));
+      const nextRemaining = Math.max(expectedCount - next.length, 0);
+      setRemaining(nextRemaining);
 
       if (next.length === 1) {
-        showMessage(`1 captured: ${cleaned}`);
+        showBanner(`1 captured: ${cleaned}`);
       } else if (next.length < expectedCount) {
-        showMessage(`${next.length} captured`);
+        showBanner(`${next.length} captured`);
       }
 
       if (next.length >= expectedCount) {
         clearTimeout(finalizeTimerRef.current);
-        finalizeTimerRef.current = setTimeout(() => finalize(next), 120);
+        finalizeTimerRef.current = setTimeout(() => finalize(next, stopScanner), 100);
       }
 
       return next;
@@ -122,11 +125,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {message && (
+      {banner && (
         <div className="fixed left-0 right-0 top-0 z-50">
           <div className="mx-auto max-w-7xl px-3 pt-3">
             <div className="rounded-none border border-slate-200 bg-white px-4 py-3 text-sm font-medium shadow-sm">
-              {message}
+              {banner}
             </div>
           </div>
         </div>
@@ -138,11 +141,9 @@ export default function App() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-blue-700 md:text-xs">
               Dixon Company
             </p>
-            <h1 className="mt-1 text-lg font-bold md:text-3xl">
-              Scanner Match Dashboard
-            </h1>
+            <h1 className="mt-1 text-lg font-bold md:text-3xl">Scanner Match Dashboard</h1>
             <p className="mt-1 text-xs text-slate-500 md:text-sm">
-              Quantity daalo aur scan auto-add hota rahega.
+              Quantity daalo, scan auto-add hota rahega, remaining live kam hoga.
             </p>
           </div>
 
